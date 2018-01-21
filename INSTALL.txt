@@ -21,7 +21,11 @@ vagrant up ipa
 [root@ipa ~]# ipa-server-install 
 
 # accept defaults
-# enter and confirm Directory Manager password
+# enter and confirm Directory Manager passwordsh-sh-4.2$ cat /mnt/net/test.testuser 
+Sun Jan 21 18:59:15 UTC 2018
+4.2$ cat /mnt/net/test.testuser 
+Sun Jan 21 18:59:15 UTC 2018
+
 # enter and confirm IPA Admin password
 # enter 'yes' to configure and confirm the system values
 
@@ -34,7 +38,9 @@ vagrant up ipa
 #First name: Test
 #Last name: User
 #---------------------
-#Added user "testuser"
+#Added user "testuser"sh-4.2$ cat /mnt/net/test.testuser 
+Sun Jan 21 18:59:15 UTC 2018
+
 #---------------------
 #  User login: testuser
 #  First name: Test
@@ -115,7 +121,9 @@ vagrant up ipa
 [root@cli ~]# systemctl restart nfs
 [root@cli ~]# systemctl status nfs-secure # verify running
 [root@cli ~]# systemctl status rpcgssd # verify running
-# note that we mount "/" which is not the same as the root directory of nfs server/
+# note that we mount "/" which is not the same assh-4.2$ cat /mnt/net/test.testuser 
+Sun Jan 21 18:59:15 UTC 2018
+ the root directory of nfs server/
 [root@cli ~]# mount -v -t nfs -o sec=krb5 nfs.demo.poc:/ /mnt
 [root@cli ~]# mount | grep poc
 #nfs.demo.poc:/ on /mnt type nfs4 (rw,relatime,vers=4.1,rsize=65536,wsize=65536,namlen=255,hard,proto=tcp,timeo=600,retrans=2,sec=krb5,clientaddr=10.10.33.13,local_lock=none,addr=10.10.33.12)
