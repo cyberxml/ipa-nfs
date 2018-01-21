@@ -21,11 +21,7 @@ vagrant up ipa
 [root@ipa ~]# ipa-server-install 
 
 # accept defaults
-# enter and confirm Directory Manager passwordsh-sh-4.2$ cat /mnt/net/test.testuser 
-Sun Jan 21 18:59:15 UTC 2018
-4.2$ cat /mnt/net/test.testuser 
-Sun Jan 21 18:59:15 UTC 2018
-
+# enter and confirm Directory Manager password
 # enter and confirm IPA Admin password
 # enter 'yes' to configure and confirm the system values
 
