@@ -1,0 +1,168 @@
+# -----------------------------------------------------------------------------
+# install the vagrant configuration files
+# -----------------------------------------------------------------------------
+git clone https://github.com/cyberxml/ipa-nfs
+cd ipa-nfs
+
+# -----------------------------------------------------------------------------
+# initial provision ipa server
+# -----------------------------------------------------------------------------
+vagrant up ipa
+
+# -----------------------------------------------------------------------------
+# configure IPA server after a reboot
+# -----------------------------------------------------------------------------
+[host os]$ vagrant halt ipa
+[host os]$ vagrant up ipa
+[host os]$ vagrant ssh ipa
+[vagrant@ipa ~]$ sudo su -
+[root@ipa ~]# /vagrant/conf/ipa/selinux-permissive.sh
+[root@ipa ~]# getenforce # verify setting is Permissive
+[root@ipa ~]# ipa-server-install 
+
+# accept defaults
+# enter and confirm Directory Manager password
+# enter and confirm IPA Admin password
+# enter 'yes' to configure and confirm the system values
+
+# enter host and service info into kdc
+[root@ipa ~]# kinit admin # enter password
+[root@ipa ~]# ipa host-add nfs.demo.poc
+[root@ipa ~]# ipa host-add cli.demo.poc
+[root@ipa ~]# ipa service-add nfs/nfs.demo.poc
+[root@ipa ~]# ipa user-add testuser
+#First name: Test
+#Last name: User
+#---------------------
+#Added user "testuser"
+#---------------------
+#  User login: testuser
+#  First name: Test
+#  Last name: User
+#  Full name: Test User
+#  Display name: Test User
+#  Initials: TU
+#  Home directory: /home/testuser
+#  GECOS: Test User
+#  Login shell: /bin/sh
+#  Principal name: testuser@DEMO.POC
+#  Principal alias: testuser@DEMO.POC
+#  Email address: testuser@demo.poc
+#  UID: 301800001
+#  GID: 301800001
+#  Password: False
+#  Member of groups: ipausers
+#  Kerberos keys available: False
+[root@ipa ~]# ipa passwd testuser
+
+# -----------------------------------------------------------------------------
+# initial provision nfs server
+# -----------------------------------------------------------------------------
+[host os]$ vagrant up nfs
+
+# -----------------------------------------------------------------------------
+# configure nfs server as ipa client
+# -----------------------------------------------------------------------------
+# nfs-secure needs a keytab file in place to trigger krb security
+# nfs-secure starts rpcgssd
+[host os]$ vagrant ssh nfs
+[vagrant@nfs ~]$ sudo su -
+[root@nfs ~]# ipa-client-install
+# enter 'yes' to configure and confirm the system values
+# enter 'admin' to enroll computer
+# enter password to authorize 'admin'
+[root@nfs ~]# kinit admin # enter password
+[root@nfs ~]# ipa-getkeytab -s ipa.demo.poc -p host/nfs.demo.poc -k /etc/krb5.keytab
+[root@nfs ~]# ipa-getkeytab -s ipa.demo.poc -p nfs/nfs.demo.poc -k /etc/krb5.keytab
+[root@nfs ~]# klist -ke /etc/krb5.keytab
+#Keytab name: FILE:/etc/krb5.keytab
+#KVNO Principal
+#---- --------------------------------------------------------------------------
+#   1 host/nfs.demo.poc@DEMO.POC (aes256-cts-hmac-sha1-96) 
+#   1 host/nfs.demo.poc@DEMO.POC (aes128-cts-hmac-sha1-96) 
+#   2 host/nfs.demo.poc@DEMO.POC (aes256-cts-hmac-sha1-96) 
+#   2 host/nfs.demo.poc@DEMO.POC (aes128-cts-hmac-sha1-96) 
+#   1 nfs/nfs.demo.poc@DEMO.POC (aes256-cts-hmac-sha1-96) 
+#   1 nfs/nfs.demo.poc@DEMO.POC (aes128-cts-hmac-sha1-96) 
+[root@nfs ~]# systemctl enable nfs-secure
+[root@nfs ~]# systemctl start nfs-secure
+[root@nfs ~]# systemctl restart nfs
+[root@nfs ~]# systemctl status nfs-secure # verify running
+[root@nfs ~]# systemctl status rpcgssd # verify running
+
+# -----------------------------------------------------------------------------
+# initial provision nfs client
+# -----------------------------------------------------------------------------
+[host os]$ vagrant up cli
+[host os]$ vagrant ssh cki
+[vagrant@cli ~]$ sudo su -
+[root@nfs ~]# ipa-client-install
+# enter 'yes' to configure and confirm the system values
+# enter 'admin' to enroll computer
+# enter password to authorize 'admin'
+[root@cli ~]# kinit admin # enter password
+[root@cli ~]# ipa-getkeytab -s ipa.demo.poc -p host/cli.demo.poc -k /etc/krb5.keytab
+[root@cli ~]# klist -ke /etc/krb5.keytab
+#Keytab name: FILE:/etc/krb5.keytab
+#KVNO Principal
+#---- --------------------------------------------------------------------------
+#   1 host/cli.demo.poc@DEMO.POC (aes256-cts-hmac-sha1-96) 
+#   1 host/cli.demo.poc@DEMO.POC (aes128-cts-hmac-sha1-96) 
+#   2 host/cli.demo.poc@DEMO.POC (aes256-cts-hmac-sha1-96) 
+#   2 host/cli.demo.poc@DEMO.POC (aes128-cts-hmac-sha1-96) 
+[root@cli ~]# systemctl enable nfs-secure
+[root@cli ~]# systemctl start nfs-secure
+[root@cli ~]# systemctl restart nfs
+[root@cli ~]# systemctl status nfs-secure # verify running
+[root@cli ~]# systemctl status rpcgssd # verify running
+# note that we mount "/" which is not the same as the root directory of nfs server/
+[root@cli ~]# mount -v -t nfs -o sec=krb5 nfs.demo.poc:/ /mnt
+[root@cli ~]# mount | grep poc
+#nfs.demo.poc:/ on /mnt type nfs4 (rw,relatime,vers=4.1,rsize=65536,wsize=65536,namlen=255,hard,proto=tcp,timeo=600,retrans=2,sec=krb5,clientaddr=10.10.33.13,local_lock=none,addr=10.10.33.12)
+#nfs.demo.poc:/net on /mnt/net type nfs4 (rw,relatime,vers=4.1,rsize=65536,wsize=65536,namlen=255,hard,proto=tcp,port=0,timeo=600,retrans=2,sec=krb5,clientaddr=10.10.33.13,local_lock=none,addr=10.10.33.12)
+
+# -------------------------------
+# test root (admin kdc creds) mount
+# -------------------------------
+[root@cli ~]# klist
+#Ticket cache: KEYRING:persistent:0:0
+#Default principal: host/cli.demo.poc@DEMO.POC
+#
+#Valid starting       Expires              Service principal
+#01/01/1970 00:00:00  01/01/1970 00:00:00  Encrypted/Credentials/v1@X-GSSPROXY:
+[root@cli ~]# date > /mnt/net/test.cli
+[root@cli ~]# cat /mnt/net/test.cli 
+# Sun Jan 21 18:51:22 UTC 2018
+
+# -------------------------------
+# test user login
+# -------------------------------
+[root@cli ~]# su testuser
+sh-4.2$ kinit
+Password for testuser@DEMO.POC: 
+Password expired.  You must change it now.
+Enter new password: 
+Enter it again: 
+sh-4.2$ klist
+#Ticket cache: KEYRING:persistent:301800001:301800001
+#Default principal: testuser@DEMO.POC
+#
+#Valid starting       Expires              Service principal
+#01/21/2018 18:59:11  01/22/2018 18:58:35  nfs/nfs.demo.poc@DEMO.POC
+#01/21/2018 18:58:35  01/22/2018 18:58:35  krbtgt/DEMO.POC@DEMO.POC
+
+sh-4.2$ date > /mnt/test.testuser
+sh-4.2$ cat /mnt/net/test.testuser 
+Sun Jan 21 18:59:15 UTC 2018
+
+# -----------------------------------------------------------------------------
+# verify nfs mount from nfs server
+# -----------------------------------------------------------------------------
+[root@nfs ~]# cat /net/test.cli 
+Sun Jan 21 18:51:22 UTC 2018
+
+[root@nfs ~]# cat /net/test.testuser 
+Sun Jan 21 18:59:15 UTC 2018
+
+
+

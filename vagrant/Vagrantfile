@@ -1,0 +1,37 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# All Vagrant configuration is done below. The "2" in Vagrant.configure
+# configures the configuration version (we support older styles for
+# backwards compatibility). Please don't change it unless you know what
+# you're doing.
+Vagrant.configure("2") do |config|
+
+  config.vm.define "ipa" do |ipa|
+    ipa.vm.box = "cyberxml/c7vb52"
+    ipa.vm.hostname = "ipa"
+    ipa.vm.network "private_network", ip: "10.10.33.11", virtualbox__intnet: "internal", netmask: "255.255.255.128"
+    ipa.vm.synced_folder ".", "/vagrant", type: "virtualbox"
+    ipa.vm.provision :shell, path: "conf/ipa/ipa-install.sh"
+    ipa.vm.provision :shell, path: "conf/resolv.sh", run: "always"
+  end
+
+  config.vm.define "nfs" do |nfs|
+    nfs.vm.box = "cyberxml/c7vb52"
+    nfs.vm.hostname = "nfs"
+    nfs.vm.network "private_network", ip: "10.10.33.12", virtualbox__intnet: "internal", netmask: "255.255.255.128"
+    nfs.vm.synced_folder ".", "/vagrant", type: "virtualbox"
+    nfs.vm.provision :shell, path: "conf/nfs/nfs-install.sh"
+    nfs.vm.provision :shell, path: "conf/resolv.sh", run: "always"
+  end
+
+  config.vm.define "cli" do |cli|
+    cli.vm.box = "cyberxml/c7vb52"
+    cli.vm.hostname = "cli"
+    cli.vm.network "private_network", ip: "10.10.33.13", virtualbox__intnet: "internal", netmask: "255.255.255.128"
+    cli.vm.synced_folder ".", "/vagrant", type: "virtualbox"
+    cli.vm.provision :shell, path: "conf/cli/cli-install.sh"
+    cli.vm.provision :shell, path: "conf/resolv.sh", run: "always"
+  end
+
+end

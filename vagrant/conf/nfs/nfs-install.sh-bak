@@ -1,0 +1,70 @@
+# https://www.tecmint.com/installing-network-services-and-configuring-services-at-system-boot/
+# https://www.tecmint.com/setting-up-nfs-server-with-kerberos-based-authentication/
+# https://www.server-world.info/en/note?os=CentOS_7&p=nfs
+# https://www.itzgeek.com/how-tos/linux/centos-how-tos/how-to-setup-nfs-server-on-centos-7-rhel-7-fedora-22.html
+
+yum -y update
+
+yum -y install net-tools
+
+# for semanage
+yum install policycoreutils-python
+
+cp hosts /etc/hosts
+
+yum -y install nfs-utils
+systemctl enable rpcbind
+systemctl start rpcbind
+systemctl enable nfs-server 
+systemctl start nfs-server 
+systemctl enable rpc-statd
+systemctl start rpc-statd
+systemctl enable nfs-idmapd
+systemctl start nfs-idmapd
+systemctl enable nfs-lock
+systemctl start nfs-lock
+
+systemctl enable firewalld
+systemctl start firewalld
+firewall-cmd --permanent --zone public --add-service mountd
+firewall-cmd --permanent --zone public --add-service rpc-bind
+firewall-cmd --permanent --zone public --add-service nfs
+firewall-cmd --reload 
+
+# NEED_IDMAPD=YES
+#cp nfs-common /etc/default
+
+# Domain = demo.poc
+cp idmapd.conf /etc
+
+#systemctl enable nfs-common
+#systemctl start nfs-common
+
+# export network shares
+mkdir /net
+chmod 777 /net
+
+# nfs group for /net directory
+# https://www.tecmint.com/setting-up-nfs-server-with-kerberos-based-authentication/
+groupadd nfs
+usermod -a -G nfs nfsnobody
+chmod 0770 /net
+chgrp nfs /net
+
+# https://www.tecmint.com/setting-up-nfs-server-with-kerberos-based-authentication/
+semanage fcontext -a -t public_content_rw_t "/net(/.*)?"
+restorecon -R /net
+setsebool -P nfs_export_all_rw on
+setsebool -P nfs_export_all_ro on
+
+
+# /filesystem/to/export client1([options]) clientN([options])
+#/net 	cli(fsid=0,no_subtree_check,rw,root_squash,sync,anonuid=1000,anongid=1000)
+#/net/mydir    	cli(ro,sync,no_subtree_check)
+cp exports /etc
+exportfs -r
+
+systemctl restart nfs-server
+
+# https://www.tecmint.com/setting-up-nfs-server-with-kerberos-based-authentication/
+useradd user1

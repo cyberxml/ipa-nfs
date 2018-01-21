@@ -1,0 +1,6 @@
+# you can control the ips/hostnames that can access at the wildcard
+# for example, this allows any client with valid kerberos ticket to connect
+# /net *(rw,sec=krb5,no_subtree_check,no_root_squash)
+# while this only allows the 'cli' host to connect (still needs valid kerberos ticket)
+/net cli(rw,sec=krb5,no_subtree_check,no_root_squash)
+
