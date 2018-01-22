@@ -34,4 +34,4 @@ cp /vagrant/conf/nfs/sysconfig.nfs /etc/sysconfig/nfs
 #-----------------------------------------------------------------------------
 # freeipa client
 #-----------------------------------------------------------------------------
-yum install freeipa-client
+yum -y install freeipa-client
