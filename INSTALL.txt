@@ -2,7 +2,7 @@
 # install the vagrant configuration files
 # -----------------------------------------------------------------------------
 git clone https://github.com/cyberxml/ipa-nfs
-cd ipa-nfs
+cd ipa-nfs/vagrant
 
 # -----------------------------------------------------------------------------
 # initial provision ipa server
